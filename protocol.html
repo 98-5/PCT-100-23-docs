@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCT-100 MQTT 通信协议</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ═══ 导航栏 ═══ -->
+<nav class="nav">
+  <a class="nav-brand" href="index.html">
+    <span class="logo">⚙️</span>PCT-100
+  </a>
+  <div class="nav-links">
+    <a href="index.html">产品说明书</a>
+    <a href="operation.html">操作指南</a>
+    <a href="protocol.html" class="active">通信协议</a>
+  </div>
+  <span class="nav-version">v1.0 · 2026.06</span>
+</nav>
+
+<div class="container">
+<div class="page-hero">
+  <h1>📡 MQTT 通信协议</h1>
+  <p class="tagline">PCT-100 设备 ↔ EMQX 服务器 ↔ PC 上位机 通信规范</p>
+</div>
+
+<!-- 连接信息 -->
+<h2>🔗 连接参数</h2>
+<table>
+  <tr><th>参数</th><th>外网</th><th>内网</th></tr>
+  <tr><td>服务器</td><td>47.98.170.180</td><td>服务器内网 IP</td></tr>
+  <tr><td>端口 (TCP)</td><td>8081</td><td>1883</td></tr>
+  <tr><td>端口 (WebSocket)</td><td>8083</td><td>8083</td></tr>
+  <tr><td>协议版本</td><td>MQTT 3.1.1</td><td>MQTT 3.1.1</td></tr>
+  <tr><td>用户名</td><td>dzdx_emqx</td><td>dzdx_emqx</td></tr>
+  <tr><td>默认设备 ID</td><td>PCT_100_23A</td><td>PCT_100_23A</td></tr>
+  <tr><td>Keep Alive</td><td>30 秒</td><td>30 秒</td></tr>
+</table>
+
+<div class="note">💡 内外网端口不同是因为外网服务器 1883 端口已被其他业务占用。串口输入 <code>*</code> 可一键切换内外网。</div>
+
+<!-- Topic -->
+<h2>📬 Topic 定义</h2>
+<h3>上行：状态上报（设备 → 服务器）</h3>
+<pre><code>Topic:  chemctrl/{device_id}/status
+方向:  设备 → 服务器
+触发:  状态变化事件（温度 &gt; 0.5℃ / 光照 &gt; 20 lux / 按键 / 继电器 / 模式改变）
+QoS:   0</code></pre>
+
+<h4>Payload 示例</h4>
+<pre><code>{
+  "temperature": 28.5,
+  "light": 476,
+  "mode": "auto",
+  "key1_lock": true,
+  "relay3": false,
+  "relay4": true,
+  "temp_threshold": 31.0,
+  "light_threshold": 200
+}</code></pre>
+
+<table>
+  <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+  <tr><td><code>temperature</code></td><td>float</td><td>当前温度 (℃)，精度 0.1</td></tr>
+  <tr><td><code>light</code></td><td>int</td><td>当前光照 (lux)</td></tr>
+  <tr><td><code>mode</code></td><td>string</td><td><code>"auto"</code> 自动 / <code>"manual"</code> 手动</td></tr>
+  <tr><td><code>key1_lock</code></td><td>bool</td><td>KEY1 总闸：<code>true</code>=开启 <code>false</code>=锁定</td></tr>
+  <tr><td><code>relay3</code></td><td>bool</td><td>灯光继电器：<code>true</code>=ON <code>false</code>=OFF</td></tr>
+  <tr><td><code>relay4</code></td><td>bool</td><td>风扇继电器：<code>true</code>=ON <code>false</code>=OFF</td></tr>
+  <tr><td><code>temp_threshold</code></td><td>float</td><td>风扇开启温度阈值 (℃)</td></tr>
+  <tr><td><code>light_threshold</code></td><td>int</td><td>灯光开启光照阈值 (lux)</td></tr>
+</table>
+
+<h3>下行：控制指令（服务器 → 设备）</h3>
+<pre><code>Topic:  chemctrl/{device_id}/command
+方向:  服务器 → 设备（或 PC 上位机 → 服务器 → 设备）
+QoS:   0</code></pre>
+
+<!-- 指令 -->
+<h2>🎮 远程控制指令</h2>
+
+<h3>1. 控制继电器 — <code>set_relay</code></h3>
+<pre><code>{
+  "cmd": "set_relay",
+  "relay": 3,
+  "value": true
+}</code></pre>
+<table>
+  <tr><th>字段</th><th>说明</th></tr>
+  <tr><td><code>relay</code></td><td><code>3</code> = 灯光，<code>4</code> = 风扇</td></tr>
+  <tr><td><code>value</code></td><td><code>true</code> = 开启，<code>false</code> = 关闭</td></tr>
+</table>
+<div class="warn">⚠️ KEY1 关闭时 <code>set_relay</code> 指令被忽略。手动模式下才可控制继电器。</div>
+
+<h3>2. 切换模式 — <code>set_mode</code></h3>
+<pre><code>{"cmd": "set_mode", "mode": "auto"}
+{"cmd": "set_mode", "mode": "manual"}</code></pre>
+<table>
+  <tr><th>mode</th><th>说明</th></tr>
+  <tr><td><code>"auto"</code></td><td>切换到自动模式（传感器自动控制继电器）</td></tr>
+  <tr><td><code>"manual"</code></td><td>切换到手动模式（按键或远程控制继电器）</td></tr>
+</table>
+<div class="warn">⚠️ KEY1 关闭时 <code>set_mode</code> 指令被忽略，ESP32 每轮 loop() 都会强制切回 auto。</div>
+
+<h3>3. 查询状态 — <code>get_status</code></h3>
+<pre><code>{"cmd": "get_status"}</code></pre>
+<p>设备收到后立即上报一次完整状态到 <code>chemctrl/{id}/status</code>。</p>
+
+<h3>4. 设置阈值 — <code>set_threshold</code></h3>
+<pre><code>{
+  "cmd": "set_threshold",
+  "temp": 32.0,
+  "light": 250
+}</code></pre>
+<table>
+  <tr><th>字段</th><th>说明</th></tr>
+  <tr><td><code>temp</code></td><td>风扇开启温度阈值 (℃)，关闭阈值自动 = temp - 1℃</td></tr>
+  <tr><td><code>light</code></td><td>灯光开启光照阈值 (lux)，关闭阈值自动 = 67% 开启阈值</td></tr>
+</table>
+<div class="note">兼容字段别名：<code>temperature</code> / <code>temp_threshold</code> 等同于 <code>temp</code>；<code>lux</code> / <code>light_threshold</code> 等同于 <code>light</code>。</div>
+<p>修改后自动保存到 Flash，返回新的 status 确认。</p>
+
+<h3>5. 远程重启 — <code>reboot</code></h3>
+<pre><code>{"cmd": "reboot"}</code></pre>
+<p>设备延时 100ms 后调用 <code>ESP.restart()</code>。</p>
+
+<!-- 指令汇总 -->
+<h2>📋 指令速查表</h2>
+<table>
+  <tr><th>cmd</th><th>关键参数</th><th>说明</th></tr>
+  <tr><td><code>set_relay</code></td><td>relay: 3/4, value: true/false</td><td>控制继电器（受 KEY1 和模式约束）</td></tr>
+  <tr><td><code>set_mode</code></td><td>mode: "auto"/"manual"</td><td>切换工作模式（受 KEY1 约束）</td></tr>
+  <tr><td><code>get_status</code></td><td>—</td><td>查询设备状态</td></tr>
+  <tr><td><code>set_threshold</code></td><td>temp: 数值, light: 数值</td><td>设置温度/光照阈值</td></tr>
+  <tr><td><code>reboot</code></td><td>—</td><td>远程重启设备</td></tr>
+</table>
+
+<!-- 状态上报触发 -->
+<h2>⚡ 状态上报触发条件</h2>
+<table>
+  <tr><th>触发条件</th><th>阈值</th></tr>
+  <tr><td>温度变化</td><td>&gt; 0.5 ℃</td></tr>
+  <tr><td>光照变化</td><td>&gt; 20 lux</td></tr>
+  <tr><td>KEY1 状态改变</td><td>任意变化</td></tr>
+  <tr><td>灯光继电器改变</td><td>任意变化</td></tr>
+  <tr><td>风扇继电器改变</td><td>任意变化</td></tr>
+  <tr><td>模式切换</td><td>任意变化</td></tr>
+  <tr><td>收到 <code>get_status</code></td><td>立即上报</td></tr>
+  <tr><td>收到 <code>set_threshold</code></td><td>保存后上报</td></tr>
+  <tr><td><code>set_relay</code> 成功</td><td>立即上报</td></tr>
+</table>
+
+<!-- 架构 -->
+<h2>🏗️ 系统通信架构</h2>
+<pre><code>┌──────────┐     chemctrl/{id}/command     ┌──────────┐
+│  PC 上位机 │ ──────────────────────────────▶ │  EMQX    │
+│ (Electron)│ ◀────────────────────────────── │  Server  │
+└──────────┘     chemctrl/{id}/status        └────┬─────┘
+                                                  │
+                                chemctrl/{id}/command (下行)
+                                chemctrl/{id}/status  (上行)
+                                                  │
+                                            ┌─────┴─────┐
+                                            │  ESP32-C3  │
+                                            │  PCT-100   │
+                                            └───────────┘</code></pre>
+
+<div class="footer">PCT-100 化工过程控制实训装置 · 信息工程学院 · 2026</div>
+</div>
+</body>
+</html>

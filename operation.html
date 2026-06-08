@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCT-100 操作指南</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ═══ 导航栏 ═══ -->
+<nav class="nav">
+  <a class="nav-brand" href="index.html">
+    <span class="logo">⚙️</span>PCT-100
+  </a>
+  <div class="nav-links">
+    <a href="index.html">产品说明书</a>
+    <a href="operation.html" class="active">操作指南</a>
+    <a href="protocol.html">通信协议</a>
+  </div>
+  <span class="nav-version">v1.0 · 2026.06</span>
+</nav>
+
+<div class="container">
+<div class="page-hero">
+  <h1>🎮 操作指南</h1>
+  <p class="tagline">从开机到远程控制，快速上手 PCT-100</p>
+</div>
+
+<!-- 快速开始 -->
+<h2>🚀 快速开始</h2>
+<ol>
+  <li><strong>上电</strong>：接入 5V DC 电源，ESP32 自动启动</li>
+  <li><strong>开机自检</strong>：RGB LED 彩虹闪烁两轮（约 1.2 秒），OLED 显示系统信息</li>
+  <li><strong>WiFi 连接</strong>：设备自动连接上次保存的 WiFi（首次使用需配网）</li>
+  <li><strong>MQTT 连接</strong>：WiFi 成功后自动连 MQTT 服务器，OLED 底部显示服务器地址</li>
+  <li><strong>开始使用</strong>：默认自动模式，系统根据传感器数据自动控制灯光和风扇</li>
+</ol>
+
+<!-- 配网 -->
+<h2>📶 WiFi 配网流程</h2>
+<div class="note">首次使用或更换网络时需要配网。已保存的网络会自动连接。</div>
+<h3>初级模式（代码写定 WiFi）</h3>
+<p>设备上电后自动连接代码中预设的 WiFi（SSID: 普通市民），无需手动操作。</p>
+
+<h3>升级模式（串口选网）</h3>
+<ol>
+  <li>打开串口监视器（波特率 <strong>115200</strong>）</li>
+  <li>输入 <code>s</code> 并回车，设备扫描附近 WiFi 并列出</li>
+  <li>输入 <strong>网络编号</strong> 选择目标网络</li>
+  <li>输入 <strong>WiFi 密码</strong>（明文）</li>
+  <li>连接成功后自动保存到 Flash，下次开机自动连接</li>
+</ol>
+
+<!-- 按键 -->
+<h2>🔘 按键操作详解</h2>
+
+<h3>KEY1 — 总闸（自锁按键）</h3>
+<table>
+  <tr><th>状态</th><th>效果</th></tr>
+  <tr><td>按下（🔴 关闭）</td><td>强制关闭所有继电器，锁定为自动模式。<br>所有 MQTT 控制指令被忽略，OLED 总闸显示 OFF。</td></tr>
+  <tr><td>松开（🟢 开启）</td><td>系统正常运行。自动模式下传感器自动控制，手动模式下可按键或远程控制。<br>WiFi 和 MQTT 正常通信。</td></tr>
+</table>
+<div class="warn">⚠️ KEY1 是最高优先级的安全锁。当 KEY1 关闭时，PC 上位机的模式切换和继电器控制按钮都会被禁用。</div>
+
+<h3>KEY2 — 功能键（轻触按键）</h3>
+<table>
+  <tr><th>操作</th><th>时长</th><th>效果</th></tr>
+  <tr><td>短按</td><td>50ms ~ 800ms</td><td><strong>手动模式</strong>下循环切换继电器四态<br>00 (全关) → 01 (风扇开) → 10 (灯开) → 11 (全开) → 00…</td></tr>
+  <tr><td>长按</td><td>≥ 2000ms</td><td>切换 <strong>自动 ↔ 手动</strong> 模式<br>切换到自动模式时自动复位所有继电器</td></tr>
+</table>
+
+<!-- 模式 -->
+<h2>🔄 自动 / 手动模式</h2>
+
+<h3>🤖 自动模式（默认）</h3>
+<ul>
+  <li>传感器持续监测光照和温度</li>
+  <li>光照 ADC 超过阈值 → 自动开灯；低于阈值 → 自动关灯</li>
+  <li>温度超过 31.0℃ → 自动开风扇；低于 30.0℃ → 自动关风扇</li>
+  <li>KEY2 短按 <strong>无效</strong>（自动模式下不响应短按）</li>
+</ul>
+
+<h3>🖐 手动模式</h3>
+<ul>
+  <li>传感器自动控制<strong>停止</strong></li>
+  <li>KEY2 短按循环切换继电器状态</li>
+  <li>PC 上位机可远程控制继电器（<code>set_relay</code> 指令）</li>
+  <li>KEY1 关闭时仍会强制切回自动模式</li>
+</ul>
+
+<!-- 串口命令 -->
+<h2>⌨️ 串口命令速查</h2>
+<table>
+  <tr><th>命令</th><th>类别</th><th>功能</th></tr>
+  <tr><td><code>s</code></td><td>WiFi</td><td>扫描可用网络</td></tr>
+  <tr><td><code>*</code></td><td>MQTT</td><td><strong>一键切换内外网</strong>（外网 8081 ↔ 内网 1883）</td></tr>
+  <tr><td><code>mqtt show</code></td><td>MQTT</td><td>显示当前 MQTT 配置</td></tr>
+  <tr><td><code>mqtt ip &lt;IP&gt;</code></td><td>MQTT</td><td>设置 MQTT 服务器 IP</td></tr>
+  <tr><td><code>mqtt port &lt;端口&gt;</code></td><td>MQTT</td><td>设置 MQTT 端口</td></tr>
+  <tr><td><code>mqtt user &lt;用户名&gt;</code></td><td>MQTT</td><td>设置 MQTT 用户名</td></tr>
+  <tr><td><code>mqtt pass &lt;密码&gt;</code></td><td>MQTT</td><td>设置 MQTT 密码</td></tr>
+  <tr><td><code>mqtt id &lt;设备ID&gt;</code></td><td>MQTT</td><td>设置设备 ID</td></tr>
+  <tr><td><code>mqtt save</code></td><td>MQTT</td><td>保存所有配置到 Flash</td></tr>
+  <tr><td><code>mqtt connect</code></td><td>MQTT</td><td>立即重连 MQTT</td></tr>
+</table>
+
+<!-- 阈值 -->
+<h2>📐 默认阈值与修改</h2>
+<table>
+  <tr><th>参数</th><th>默认值</th><th>修改方式</th></tr>
+  <tr><td>风扇开启温度</td><td>31.0 ℃</td><td>MQTT <code>set_threshold</code> 指令 / PC 上位机</td></tr>
+  <tr><td>风扇关闭温度</td><td>30.0 ℃</td><td>自动 = 开启温度 - 1℃</td></tr>
+  <tr><td>光照开启阈值</td><td>200 lux</td><td>MQTT <code>set_threshold</code> 指令 / PC 上位机</td></tr>
+  <tr><td>光照关闭阈值</td><td>133 lux</td><td>自动 = 开启阈值 × 2/3</td></tr>
+</table>
+<div class="note">阈值修改后自动保存到 Flash，断电不丢失。设备重启后恢复上次设定的阈值。</div>
+
+<div class="footer">PCT-100 化工过程控制实训装置 · 信息工程学院 · 2026</div>
+</div>
+</body>
+</html>

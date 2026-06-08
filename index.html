@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCT-100 化工控制实训装置 · 产品说明书</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ═══ 导航栏 ═══ -->
+<nav class="nav">
+  <a class="nav-brand" href="index.html">
+    <span class="logo">⚙️</span>PCT-100
+  </a>
+  <div class="nav-links">
+    <a href="index.html" class="active">产品说明书</a>
+    <a href="operation.html">操作指南</a>
+    <a href="protocol.html">通信协议</a>
+  </div>
+  <span class="nav-version">v1.0 · 2026.06</span>
+</nav>
+
+<!-- ═══ 主页内容 ═══ -->
+<div class="container">
+
+<div class="page-hero">
+  <h1>PCT-100 化工过程控制实训装置</h1>
+  <p class="tagline">基于 ESP32-C3 的智能环境监控与自动控制系统</p>
+</div>
+
+<!-- 特性 -->
+<h2>📋 功能概览</h2>
+<div class="features">
+  <div class="feature-card">
+    <div class="icon">🌡️</div>
+    <h4>温度监测</h4>
+    <p>DS18B20 数字传感器，精度 ±0.5℃，实时采集并显示</p>
+  </div>
+  <div class="feature-card">
+    <div class="icon">💡</div>
+    <h4>光照监测</h4>
+    <p>模拟光敏传感器 + 12-bit ADC，光照越亮数值越高</p>
+  </div>
+  <div class="feature-card">
+    <div class="icon">🔌</div>
+    <h4>双路继电器</h4>
+    <p>灯光 + 风扇独立控制，支持手动四态 / 自动联动两种模式</p>
+  </div>
+  <div class="feature-card">
+    <div class="icon">📺</div>
+    <h4>OLED 显示</h4>
+    <p>128×64 中文界面，实时显示温度、光照、继电器状态、网络信息</p>
+  </div>
+  <div class="feature-card">
+    <div class="icon">🌈</div>
+    <h4>RGB 状态灯</h4>
+    <p>WS2812 万色灯，6 种颜色/闪烁模式直观反馈设备状态</p>
+  </div>
+  <div class="feature-card">
+    <div class="icon">📶</div>
+    <h4>WiFi + MQTT</h4>
+    <p>2.4GHz WiFi 联网，MQTT 远程监控，支持内外网切换</p>
+  </div>
+</div>
+
+<!-- 硬件 -->
+<h2>🔧 硬件规格</h2>
+<table>
+  <tr><th>组件</th><th>型号/参数</th><th>接口</th></tr>
+  <tr><td>主控芯片</td><td>ESP32-C3 (RISC-V 160MHz)</td><td>—</td></tr>
+  <tr><td>温度传感器</td><td>DS18B20，-55~+125℃，±0.5℃</td><td>GPIO10 (OneWire)</td></tr>
+  <tr><td>光照传感器</td><td>光敏电阻模块，12-bit ADC</td><td>GPIO1 (ADC)</td></tr>
+  <tr><td>OLED 显示屏</td><td>SSD1306 128×64，I²C</td><td>GPIO4(SDA) + GPIO5(SCL)</td></tr>
+  <tr><td>RGB LED</td><td>WS2812 集成灯珠</td><td>GPIO0 (单总线)</td></tr>
+  <tr><td>继电器1 (灯光)</td><td>高电平吸合</td><td>GPIO6</td></tr>
+  <tr><td>继电器2 (风扇)</td><td>高电平吸合</td><td>GPIO7</td></tr>
+  <tr><td>KEY1 (总闸)</td><td>自锁按键，低电平有效</td><td>GPIO20</td></tr>
+  <tr><td>KEY2 (模式)</td><td>轻触按键，低电平有效</td><td>GPIO21</td></tr>
+  <tr><td>WiFi</td><td>2.4GHz 802.11 b/g/n</td><td>板载天线</td></tr>
+</table>
+
+<!-- 按键 -->
+<h2>🔘 按键操作</h2>
+<table>
+  <tr><th>按键</th><th>操作</th><th>功能</th></tr>
+  <tr><td>KEY1</td><td>按下 (自锁)</td><td><strong>总闸关闭</strong>：强制关闭所有继电器，进入自动模式</td></tr>
+  <tr><td>KEY1</td><td>松开</td><td><strong>总闸开启</strong>：恢复运行，允许模式切换和继电器控制</td></tr>
+  <tr><td>KEY2</td><td>短按 (&lt; 0.8s)</td><td>手动模式下，循环切换继电器四种状态 (00→01→10→11→00…)</td></tr>
+  <tr><td>KEY2</td><td>长按 (≥ 2s)</td><td>切换 <strong>自动 / 手动</strong> 模式</td></tr>
+</table>
+
+<h3>继电器四态（手动模式）</h3>
+<table>
+  <tr><th>状态</th><th>灯光 (继电器1)</th><th>风扇 (继电器2)</th></tr>
+  <tr><td>0 (00)</td><td style="color:var(--red);">OFF</td><td style="color:var(--red);">OFF</td></tr>
+  <tr><td>1 (01)</td><td style="color:var(--red);">OFF</td><td style="color:var(--green);">ON</td></tr>
+  <tr><td>2 (10)</td><td style="color:var(--green);">ON</td><td style="color:var(--red);">OFF</td></tr>
+  <tr><td>3 (11)</td><td style="color:var(--green);">ON</td><td style="color:var(--green);">ON</td></tr>
+</table>
+
+<!-- 自动控制 -->
+<h2>🤖 自动控制逻辑</h2>
+<p>自动模式下，传感器数据驱动继电器动作：</p>
+<table>
+  <tr><th>控制对象</th><th>触发条件</th><th>动作</th></tr>
+  <tr><td>灯光</td><td>光照 ADC &gt; 阈值 (1500)</td><td>继电器1 吸合 → 灯亮</td></tr>
+  <tr><td>灯光</td><td>光照 ADC &lt; 阈值 (1000)</td><td>继电器1 释放 → 灯灭</td></tr>
+  <tr><td>风扇</td><td>温度 &gt; 31.0℃</td><td>继电器2 吸合 → 风扇转</td></tr>
+  <tr><td>风扇</td><td>温度 &lt; 30.0℃</td><td>继电器2 释放 → 风扇停</td></tr>
+</table>
+<div class="note">💡 光照使用<strong>滞回控制</strong>（开灯 1500 / 关灯 1000），温度使用 <strong>1℃ 回差</strong>，防止继电器在临界值附近频繁抖动。</div>
+
+<!-- RGB LED -->
+<h2>🌈 RGB LED 状态指示</h2>
+<table>
+  <tr><th>颜色 / 效果</th><th>含义</th></tr>
+  <tr><td>🌈 彩虹快闪 (200ms×2轮)</td><td>系统开机自检</td></tr>
+  <tr><td>🔴🟢🔵 慢循环 (1s/色)</td><td>正常运行（已连接 WiFi + MQTT）</td></tr>
+  <tr><td>🔴 红闪 (200ms)</td><td>WiFi 未连接</td></tr>
+  <tr><td>🔴🟢🔵 交替 (500ms)</td><td>MQTT 未连接</td></tr>
+  <tr><td>🔴🟢🔵 交替 (300ms)</td><td>光照越界告警</td></tr>
+  <tr><td>🔴🟢🔵 交替 (500ms)</td><td>温度越界告警</td></tr>
+  <tr><td>🔴🟢🔵 快闪 (100ms)</td><td>严重告警（光照+温度同时越界）</td></tr>
+</table>
+
+<!-- OLED -->
+<h2>📺 OLED 显示界面</h2>
+<p>128×64 中文显示，1 秒刷新一次：</p>
+<table>
+  <tr><th>显示项</th><th>来源</th><th>示例</th></tr>
+  <tr><td>运行模式</td><td>自动/手动</td><td>模式: 自动</td></tr>
+  <tr><td>总闸状态</td><td>KEY1</td><td>总闸: ON</td></tr>
+  <tr><td>光照值 + 阈值</td><td>ADC + 设定值</td><td>光照: 185/200</td></tr>
+  <tr><td>温度 + 阈值</td><td>DS18B20 + 设定值</td><td>温度: 28.5/31.0</td></tr>
+  <tr><td>灯光状态</td><td>继电器1</td><td>灯光: ON</td></tr>
+  <tr><td>风扇状态</td><td>继电器2</td><td>风扇: OFF</td></tr>
+  <tr><td>WiFi 状态</td><td>WiFi 模块</td><td>WiFi: 已连接</td></tr>
+  <tr><td>MQTT 地址</td><td>MQTT 模块</td><td>47.98.170.180:8081</td></tr>
+</table>
+
+<!-- 网络 -->
+<h2>📶 网络连接</h2>
+<table>
+  <tr><th>功能</th><th>说明</th></tr>
+  <tr><td>WiFi 配网</td><td>支持串口扫描选网、输入密码；首次连接成功后自动保存到 Flash</td></tr>
+  <tr><td>断线重连</td><td>WiFi 断线自动检测并重连，连接状态实时显示在 OLED</td></tr>
+  <tr><td>内外网切换</td><td>串口输入 <code>*</code> 一键切换：外网 TCP 8081 ↔ 内网 TCP 1883</td></tr>
+  <tr><td>MQTT 协议</td><td>MQTT 3.1.1，JSON 格式通信，支持 5 种远程控制指令</td></tr>
+</table>
+
+<div class="footer">PCT-100 化工过程控制实训装置 · 信息工程学院 · 2026</div>
+</div>
+</body>
+</html>
